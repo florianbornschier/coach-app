@@ -44,7 +44,7 @@ export default function DashboardHeader({
             {/* Results badge */}
             <Button
               variant={'outline'}
-              className='flex items-center px-6 py-3 gap-3 rounded-xl'
+              className='flex flex-1 md:flex-1/2 items-center gap-3 w-full'
             >
               <BookOpen className='mr-1 size-5' />
               <span className='flex items-center gap-2'>
@@ -61,7 +61,7 @@ export default function DashboardHeader({
             <Button
               onClick={handleExport}
               disabled={filteredResults.length === 0}
-              className='cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300'
+              className='flex-1 md:flex-1/2 cursor-pointer w-full'
             >
               <DownloadIcon className='mr-1 size-5' />
               Export CSV
