@@ -40,11 +40,13 @@ export default function InstagramFetcher({
   }, [profiles, onProfilesFetched]);
 
   return (
-    <div className='bg-white rounded-xl shadow-sm border border-slate-200 p-6'>
-      <h3 className='text-lg font-semibold mb-4'>Fetch Instagram Profiles</h3>
+    <div className='bg-card rounded-xl shadow-sm border border-border p-6'>
+      <h3 className='text-lg font-semibold text-card-foreground mb-4'>
+        Fetch Instagram Profiles
+      </h3>
       <div className='space-y-4'>
         <div>
-          <label className='block text-sm font-medium text-slate-700 mb-2'>
+          <label className='block text-sm font-medium text-card-foreground mb-2'>
             Instagram Usernames (comma-separated)
           </label>
           <input
@@ -52,10 +54,10 @@ export default function InstagramFetcher({
             value={usernames}
             onChange={(e) => setUsernames(e.target.value)}
             placeholder='username1, username2, username3'
-            className='w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
+            className='w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-muted-foreground'
             disabled={loading}
           />
-          <p className='text-xs text-slate-500 mt-1'>
+          <p className='text-xs text-muted-foreground mt-1'>
             Enter Instagram usernames separated by commas. Only German accounts
             will be returned.
           </p>
@@ -84,4 +86,3 @@ export default function InstagramFetcher({
     </div>
   );
 }
-

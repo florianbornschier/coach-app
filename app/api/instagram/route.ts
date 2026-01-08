@@ -66,9 +66,59 @@ export async function GET(request: NextRequest) {
     }
 
     const provider = getInstagramProvider();
-    const profiles = await provider.fetchProfiles(usernames);
-
-    return NextResponse.json({ profiles, count: profiles.length });
+    
+    // For Bright Data, we need to get profiles with related accounts separately
+    // Check if the provider has the fetchProfileWithRelated method (Bright Data only)
+    const providerAny = provider as any;
+    const hasRelatedAccountsMethod = typeof providerAny.fetchProfileWithRelated === 'function';
+    
+    if (hasRelatedAccountsMethod) {
+      // Use the internal method to get profiles with related accounts
+      const mainProfiles: any[] = [];
+      const relatedAccounts: any[] = [];
+      const processedUsernames = new Set<string>();
+      
+      for (const username of usernames) {
+        try {
+          const { profile, relatedAccounts: related } = await providerAny.fetchProfileWithRelated(username);
+          
+          if (profile) {
+            mainProfiles.push(profile);
+            processedUsernames.add(profile.username.toLowerCase());
+          }
+          
+          // Add related accounts (avoid duplicates)
+          for (const relatedAccount of related) {
+            const usernameKey = relatedAccount.username.toLowerCase();
+            if (!processedUsernames.has(usernameKey)) {
+              relatedAccounts.push(relatedAccount);
+              processedUsernames.add(usernameKey);
+            }
+          }
+          
+          // Small delay to avoid rate limiting
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        } catch (error) {
+          console.error(`Error fetching ${username}:`, error);
+        }
+      }
+      
+      return NextResponse.json({ 
+        profiles: mainProfiles, 
+        relatedAccounts: relatedAccounts,
+        count: mainProfiles.length,
+        relatedCount: relatedAccounts.length
+      });
+    } else {
+      // For other providers, use the standard method
+      const profiles = await provider.fetchProfiles(usernames);
+      return NextResponse.json({ 
+        profiles, 
+        relatedAccounts: [],
+        count: profiles.length,
+        relatedCount: 0
+      });
+    }
   } catch (error) {
     console.error('Error in Instagram API route:', error);
     return NextResponse.json(

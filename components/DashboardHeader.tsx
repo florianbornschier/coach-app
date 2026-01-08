@@ -17,7 +17,7 @@ export default function DashboardHeader({
   };
 
   return (
-    <div className='relative overflow-hidden rounded-2xl bg-card shadow-lg border border-border/50 mb-10'>
+    <div className='relative overflow-hidden mb-10'>
       {/* Subtle gradient background */}
       <div className='absolute inset-0 bg-linear-to-br from-primary/10 via-transparent to-accent/5' />
 
