@@ -1,4 +1,4 @@
-import { CoachProfile } from '@/lib/types';
+// import { CoachProfile } from '@/lib/types';
 
 interface LogoProps {
   className?: string;
