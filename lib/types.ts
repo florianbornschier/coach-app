@@ -15,6 +15,7 @@ export interface CoachProfile {
   profilePicUrlHD?: string;
   niche: string;
   verified: boolean;
+  isPartial?: boolean;
 }
 
 export interface FilterOptions {

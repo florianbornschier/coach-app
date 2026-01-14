@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 
 const ITEMS_PER_PAGE = 12;
 const MIN_PROFILES_TO_SHOW = 12; // Show page as soon as we have this many profiles
-const CACHE_KEY_PRELOAD = 'preload_batch';
+const CACHE_KEY_PRELOAD = 'preload_batch_v2'; // Invalidate old cache to force DB population
 
 interface CoachFinderProps {
   className?: string;
@@ -318,9 +318,7 @@ export default function CoachFinder({ className }: CoachFinderProps) {
   };
 
   return (
-    <div
-      className={cn('max-w-7xl py-10', className)}
-    >
+    <div className={cn('max-w-7xl py-10', className)}>
       <DashboardHeader
         totalResults={coaches.length}
         filteredResults={filteredCoaches}
@@ -505,7 +503,7 @@ export default function CoachFinder({ className }: CoachFinderProps) {
                   {error}
                 </div>
               )}
-              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
+              <div className='grid grid-cols-1 gap-6'>
                 {paginatedCoaches.map((coach) => (
                   <ProfileCard
                     key={coach.id}

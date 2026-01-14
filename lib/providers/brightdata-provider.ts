@@ -47,8 +47,57 @@ export class BrightDataProvider implements InstagramProvider {
       datasetId || process.env.BRIGHT_DATA_DATASET_ID || 'gd_l1vikfch901nx3by4';
   }
 
+  private mapDbProfileToCoachProfile(dbProfile: any): CoachProfile {
+    return {
+      id: dbProfile.id,
+      username: dbProfile.username,
+      fullName: dbProfile.fullName,
+      profilePicture: dbProfile.profilePicture || '',
+      bio: dbProfile.bio,
+      biography: dbProfile.biography,
+      externalUrls: dbProfile.externalUrls,
+      followersCount: dbProfile.followersCount,
+      followsCount: dbProfile.followsCount,
+      postsCount: dbProfile.postsCount,
+      isBusinessAccount: dbProfile.isBusinessAccount,
+      isProfessionalAccount: dbProfile.isProfessionalAccount,
+      profilePicUrl: dbProfile.profilePicUrl,
+      niche: dbProfile.niche,
+      verified: dbProfile.verified,
+      isPartial: dbProfile.isPartial,
+    };
+  }
+
   async fetchProfile(username: string): Promise<CoachProfile | null> {
     try {
+      const { db } = await import('@/lib/db');
+
+      // 1. Check Database first
+      const existingProfile = await db.coachProfile.findUnique({
+        where: { username },
+        include: { relatedProfiles: true },
+      });
+
+      // 2. Check if data is fresh (< 6 months old) and NOT partial
+      if (existingProfile) {
+        // If profile is partial, we treat it as missing/stale because we need full data
+        if (existingProfile.isPartial) {
+          console.log(
+            `Cached profile for ${username} is partial, fetching full data...`
+          );
+        } else {
+          const sixMonthsAgo = new Date();
+          sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+          if (existingProfile.lastFetched > sixMonthsAgo) {
+            console.log(`Using cached profile for ${username}`);
+            return this.mapDbProfileToCoachProfile(existingProfile);
+          }
+          console.log(`Cached profile for ${username} is stale, refreshing...`);
+        }
+      }
+
+      // 3. Fetch from API if missing or stale
       const response = await fetch(
         `https://api.brightdata.com/datasets/v3/scrape?dataset_id=${this.datasetId}&notify=false&include_errors=true&type=discover_new&discover_by=user_name`,
         {
@@ -196,10 +245,105 @@ export class BrightDataProvider implements InstagramProvider {
         verified: profileData.is_verified || false,
       };
 
+      // 4. Save to Database
+      await this.saveProfileToDb(mainProfile, profileData.related_accounts);
+
       return mainProfile;
     } catch (error) {
       console.error(`Error fetching profile for ${username}:`, error);
       throw error;
+    }
+  }
+
+  private async saveProfileToDb(
+    profile: CoachProfile,
+    relatedAccounts?: RelatedAccount[]
+  ) {
+    try {
+      const { db } = await import('@/lib/db');
+
+      // Upsert main profile
+      await db.coachProfile.upsert({
+        where: { username: profile.username },
+        update: {
+          fullName: profile.fullName,
+          profilePicture: profile.profilePicture,
+          bio: profile.bio,
+          biography: profile.biography,
+          externalUrls: profile.externalUrls,
+          followersCount: profile.followersCount,
+          followsCount: profile.followsCount,
+          postsCount: profile.postsCount,
+          isBusinessAccount: profile.isBusinessAccount,
+          isProfessionalAccount: profile.isProfessionalAccount,
+          profilePicUrl: profile.profilePicUrl,
+          niche: profile.niche,
+          verified: profile.verified,
+          lastFetched: new Date(),
+          isPartial: false, // This is a full profile
+        },
+        create: {
+          id: profile.id,
+          username: profile.username,
+          fullName: profile.fullName,
+          profilePicture: profile.profilePicture,
+          bio: profile.bio,
+          biography: profile.biography,
+          externalUrls: profile.externalUrls,
+          followersCount: profile.followersCount,
+          followsCount: profile.followsCount,
+          postsCount: profile.postsCount,
+          isBusinessAccount: profile.isBusinessAccount,
+          isProfessionalAccount: profile.isProfessionalAccount,
+          profilePicUrl: profile.profilePicUrl,
+          niche: profile.niche,
+          verified: profile.verified,
+          lastFetched: new Date(),
+          isPartial: false, // This is a full profile
+        },
+      });
+
+      // Handle related accounts
+      if (relatedAccounts && relatedAccounts.length > 0) {
+        const relatedProfilesToConnect = [];
+
+        for (const related of relatedAccounts) {
+          const relatedUsername = related.user_name?.replace(/\*/g, '');
+          if (!relatedUsername) continue;
+
+          // Upsert related profile (partial data)
+          const relatedProfile = await db.coachProfile.upsert({
+            where: { username: relatedUsername },
+            update: {}, // Don't update fetch timestamp or details if it already exists
+            create: {
+              id: related.id || relatedUsername,
+              username: relatedUsername,
+              fullName: related.profile_name?.replace(/\*/g, ''),
+              profilePicture: related.profile_pic_url?.replace(/\*/g, ''),
+              verified: related.is_verified || false,
+              isPartial: true, // Explicitly mark as partial
+              // We can set lastFetched to epoch, but isPartial flag is the main guard now
+              lastFetched: new Date(0),
+            },
+          });
+          relatedProfilesToConnect.push({ id: relatedProfile.id });
+        }
+
+        // Connect related profiles to main profile
+        if (relatedProfilesToConnect.length > 0) {
+          await db.coachProfile.update({
+            where: { username: profile.username },
+            data: {
+              relatedProfiles: {
+                connect: relatedProfilesToConnect,
+              },
+            },
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`Error caching profile ${profile.username} to DB:`, error);
+      // Don't throw, just log error so we still return the API data
     }
   }
 
@@ -437,9 +581,42 @@ export class BrightDataProvider implements InstagramProvider {
 
   async fetchProfiles(usernames: string[]): Promise<CoachProfile[]> {
     const profiles: CoachProfile[] = [];
-    const processedUsernames = new Set<string>(); // Track processed usernames to avoid duplicates
+    const processedUsernames = new Set<string>();
+    const usernamesToFetch: string[] = [];
+    const { db } = await import('@/lib/db');
 
-    for (const username of usernames) {
+    // 1. Check DB for all usernames
+    try {
+      const cachedProfiles = await db.coachProfile.findMany({
+        where: {
+          username: { in: usernames },
+        },
+      });
+
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+      for (const username of usernames) {
+        const cached = cachedProfiles.find((p) => p.username === username);
+        // Only use cache if it's NOT partial AND fresh
+        if (cached && !cached.isPartial && cached.lastFetched > sixMonthsAgo) {
+          console.log(`Using cached profile for ${username} (batch)`);
+          profiles.push(this.mapDbProfileToCoachProfile(cached));
+          processedUsernames.add(username);
+        } else {
+          usernamesToFetch.push(username);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking DB cache for batch:', error);
+      // Fallback to fetching all if DB check fails
+      usernamesToFetch.push(...usernames);
+    }
+
+    // 2. Fetch missing/stale profiles from API
+    for (const username of usernamesToFetch) {
+      if (processedUsernames.has(username)) continue;
+
       try {
         const { profile, relatedAccounts } = await this.fetchProfileWithRelated(
           username
@@ -449,6 +626,23 @@ export class BrightDataProvider implements InstagramProvider {
         if (profile) {
           profiles.push(profile);
           processedUsernames.add(profile.username.toLowerCase());
+
+          // Save to DB (including related)
+          // Note: relatedAccounts here is mapped type, need original structure if we want to save correctly
+          // But saveProfileToDb takes mapped CoachProfile, so we need to adjust or call it differently.
+          // For simplicity in this batch flow, we trust fetchProfileWithRelated to handle just scraping,
+          // and we call saveProfileToDb separately if we want, OR we reuse fetchProfile logic.
+          // Actually, let's reuse fetchProfile logic for saving,
+          // but here we already have the data. Ideally saveProfileToDb should be utilized.
+          // Since fetchProfileWithRelated doesn't return raw data, we can't pass RelatedAccount[] easily.
+          // Let's modify fetchProfileWithRelated to save to DB internally or refactor.
+
+          // Refactoring: Let's just save the main profile here for now without related relations
+          // to keep type safety until we refactor further, OR assume fetchProfile handles singular updates.
+          // Wait, fetchProfile is public method. fetchProfileWithRelated is private.
+
+          // Let's just update the DB with the profile data we got.
+          await this.saveProfileToDb(profile, []); // Pass empty related for now in batch to avoid complexity mismatch
         }
 
         // Add related accounts (avoid duplicates)
@@ -510,7 +704,6 @@ export class BrightDataProvider implements InstagramProvider {
       //   .then((response) => response.json())
       //   .then((data) => console.log(data))
       //   .catch((error) => console.error('Error:', error));
-
 
       const response = await fetch(
         `https://api.brightdata.com/datasets/v3/trigger?dataset_id=${this.datasetId}&notify=false&include_errors=true`,
@@ -702,6 +895,9 @@ export class BrightDataProvider implements InstagramProvider {
         };
 
         profiles.push(profile);
+
+        // Save to Database
+        await this.saveProfileToDb(profile, profileData.related_accounts);
       }
 
       console.log(`Processed ${profiles.length} profiles from snapshot`);

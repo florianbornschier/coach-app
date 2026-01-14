@@ -25,7 +25,7 @@ export default function DashboardHeader({
         <div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8'>
           <div className='max-w-2xl'>
             <h1 className='text-2xl md:text-3xl font-bold text-foreground mb-3'>
-              Coach Finder
+              Find Your Dream Job as a Closer
             </h1>
             <p className='text-lg text-foreground/70'>
               Discover top coaches and sellers across niches •{' '}
