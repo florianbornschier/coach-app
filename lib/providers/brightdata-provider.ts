@@ -633,10 +633,85 @@ export class BrightDataProvider implements InstagramProvider {
    * Trigger asynchronous batch fetch for multiple URLs
    * Returns snapshot ID for tracking progress
    */
-  async fetchProfilesByUrlBatch(urls: string[]): Promise<string> {
+  async fetchProfilesByUrlBatch(urls: string[]): Promise<{
+    snapshotId: string | null;
+    cachedProfiles: CoachProfile[];
+  }> {
     try {
+      const { db } = await import('@/lib/db');
+
+      const cachedProfiles: CoachProfile[] = [];
+      const urlsToFetch: string[] = [];
+
+      // 1. Check DB for each URL
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+      // Map URLs to usernames for DB lookup
+      // Basic extraction: removal of trailing slash and taking last segment
+      const urlToUsernameMap = new Map<string, string>();
+      const usernamesToCheck: string[] = [];
+
+      for (const url of urls) {
+        try {
+          // Remove query params and trailing slash
+          const cleanUrl = url.split('?')[0].replace(/\/$/, '');
+          const segments = cleanUrl.split('/');
+          const username = segments[segments.length - 1];
+          if (username) {
+            urlToUsernameMap.set(url, username.toLowerCase());
+            usernamesToCheck.push(username.toLowerCase());
+          } else {
+            urlsToFetch.push(url);
+          }
+        } catch (e) {
+          urlsToFetch.push(url);
+        }
+      }
+
+      if (usernamesToCheck.length > 0) {
+        const dbProfiles = await db.coachProfile.findMany({
+          where: {
+            username: { in: usernamesToCheck },
+          },
+        });
+
+        for (const url of urls) {
+          const username = urlToUsernameMap.get(url);
+          if (username) {
+            const profile = dbProfiles.find((p) => p.username === username);
+            // Check freshness and partial status
+            if (
+              profile &&
+              !profile.isPartial &&
+              profile.lastFetched > sixMonthsAgo
+            ) {
+              console.log(
+                `Using cached profile for ${username} (batch preload)`
+              );
+              cachedProfiles.push(this.mapDbProfileToCoachProfile(profile));
+            } else {
+              urlsToFetch.push(url);
+            }
+          }
+        }
+      } else {
+        // Fallback if extraction failed
+        urlsToFetch.push(...urls);
+      }
+
+      // If all profiles are cached, return immediately
+      if (urlsToFetch.length === 0) {
+        console.log('All profiles found in cache, skipping API trigger');
+        return { snapshotId: null, cachedProfiles };
+      }
+
+      console.log(
+        `Triggering batch fetch for ${urlsToFetch.length} profiles (${cachedProfiles.length} cached)`
+      );
+
       // Format URLs for Bright Data API
-      const input = urls.map((url) => ({ url }));
+      const input = urlsToFetch.map((url) => ({ url }));
 
       // console.log('Triggering batch fetch for URLs Inputssss:', input);
       const data = JSON.stringify({
@@ -718,7 +793,7 @@ export class BrightDataProvider implements InstagramProvider {
       }
 
       console.log(`Batch job triggered with snapshot ID: ${snapshotId}`);
-      return snapshotId;
+      return { snapshotId, cachedProfiles };
     } catch (error) {
       console.error('Error triggering batch fetch:', error);
       throw error;

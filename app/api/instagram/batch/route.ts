@@ -36,9 +36,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Trigger batch fetch
-    const snapshotId = await provider.fetchProfilesByUrlBatch(urls);
+    const { snapshotId, cachedProfiles } =
+      await provider.fetchProfilesByUrlBatch(urls);
 
-    return NextResponse.json({ snapshotId });
+    return NextResponse.json({ snapshotId, cachedProfiles });
   } catch (error) {
     console.error('Error in batch API route:', error);
     return NextResponse.json(

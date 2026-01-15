@@ -77,10 +77,33 @@ export default function CoachFinder({ className }: CoachFinderProps) {
           throw new Error(errorData.error || 'Failed to trigger batch fetch');
         }
 
-        const { snapshotId } = await triggerResponse.json();
-        console.log('Batch fetch triggered:', snapshotId);
+        const { snapshotId, cachedProfiles } = await triggerResponse.json();
+        console.log(
+          'Batch fetch triggered:',
+          snapshotId,
+          'Cached:',
+          cachedProfiles?.length
+        );
 
-        let hasShownInitialProfiles = false;
+        // Show cached profiles immediately
+        if (cachedProfiles && cachedProfiles.length > 0) {
+          setCoaches(cachedProfiles);
+          console.log(
+            `Showing ${cachedProfiles.length} cached profiles immediately`
+          );
+        }
+
+        // If no snapshot ID, we are done (all were cached)
+        if (!snapshotId) {
+          setPreloading(false);
+          setBackgroundLoading(false);
+          // Update local cache with the full set
+          ProfileCache.set(CACHE_KEY_PRELOAD, cachedProfiles);
+          return;
+        }
+
+        let hasShownInitialProfiles =
+          cachedProfiles && cachedProfiles.length >= MIN_PROFILES_TO_SHOW;
 
         // Poll for completion
         const pollInterval = setInterval(async () => {
@@ -146,12 +169,28 @@ export default function CoachFinder({ className }: CoachFinderProps) {
               clearInterval(pollInterval);
 
               // Final update with all profiles
-              setCoaches(statusData.profiles);
+              // Merge cached profiles with new ones
+              setCoaches((prev) => {
+                const existingIds = new Set(prev.map((p) => p.id));
+                const newProfiles = statusData.profiles.filter(
+                  (p: CoachProfile) => !existingIds.has(p.id)
+                );
+                return [...prev, ...newProfiles];
+              });
+
               setBackgroundLoading(false);
               setPreloading(false);
 
-              // Cache the results
-              ProfileCache.set(CACHE_KEY_PRELOAD, statusData.profiles);
+              // Cache the combined results
+              const allProfiles = [
+                ...(cachedProfiles || []),
+                ...statusData.profiles,
+              ];
+              // De-duplicate just in case
+              const uniqueProfiles = Array.from(
+                new Map(allProfiles.map((p) => [p.id, p])).values()
+              );
+              ProfileCache.set(CACHE_KEY_PRELOAD, uniqueProfiles);
 
               console.log(
                 `Preloaded ${statusData.profiles.length} profiles (cached)`
