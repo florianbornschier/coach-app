@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 
 const ITEMS_PER_PAGE = 12;
 const MIN_PROFILES_TO_SHOW = 12; // Show page as soon as we have this many profiles
-const CACHE_KEY_PRELOAD = 'preload_batch_v2'; // Invalidate old cache to force DB population
+const CACHE_KEY_PRELOAD = 'preload_batch_v4'; // Invalidate old cache to force DB population
 
 interface CoachFinderProps {
   className?: string;
@@ -324,9 +324,9 @@ export default function CoachFinder({ className }: CoachFinderProps) {
         filteredResults={filteredCoaches}
       />
 
-      <div className='grid grid-cols-1 lg:grid-cols-4 gap-5'>
+      <div className='grid grid-cols-1 gap-5'>
         {/* Sidebar */}
-        <aside className='lg:col-span-1'>
+        <aside>
           <FilterSidebar
             selectedNiches={filters.niches}
             minFollowers={filters.minFollowers}
@@ -348,7 +348,7 @@ export default function CoachFinder({ className }: CoachFinderProps) {
         </aside>
 
         {/* Main Content */}
-        <main className='lg:col-span-3'>
+        <main>
           {coaches.length === 0 && !searching && !preloading ? (
             <div className='bg-card rounded-xl shadow-sm border border-border p-16 text-center'>
               <svg

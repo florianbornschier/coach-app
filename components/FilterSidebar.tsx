@@ -94,7 +94,7 @@ export default function FilterSidebar({
         <label className='block text-sm font-semibold text-card-foreground mb-3'>
           Niche Categories
         </label>
-        <div className='flex flex-row gap-2 overflow-x-auto sm:overflow-x-scroll md:overflow-x-scroll lg:flex-col lg:overflow-x-visible lg:overflow-y-auto lg:max-h-72 pb-2 lg:pb-0 -mx-2 px-2 lg:mx-0 lg:px-0 custom-scrollbar scrollbar-thin scrollbar-thumb-border scrollbar-track-muted'>
+        <div className='flex flex-row gap-2 overflow-x-auto sm:overflow-x-scroll md:overflow-x-scroll lg:overflow-x-visible lg:overflow-y-auto lg:max-h-72 pb-2 lg:pb-0 -mx-2 px-2 lg:mx-0 lg:px-0 custom-scrollbar scrollbar-thin scrollbar-thumb-border scrollbar-track-muted'>
           {NICHES.map((niche) => {
             const isSelected = selectedNiches.includes(niche);
             return (

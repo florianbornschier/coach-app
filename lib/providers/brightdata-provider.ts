@@ -303,44 +303,8 @@ export class BrightDataProvider implements InstagramProvider {
         },
       });
 
-      // Handle related accounts
-      if (relatedAccounts && relatedAccounts.length > 0) {
-        const relatedProfilesToConnect = [];
-
-        for (const related of relatedAccounts) {
-          const relatedUsername = related.user_name?.replace(/\*/g, '');
-          if (!relatedUsername) continue;
-
-          // Upsert related profile (partial data)
-          const relatedProfile = await db.coachProfile.upsert({
-            where: { username: relatedUsername },
-            update: {}, // Don't update fetch timestamp or details if it already exists
-            create: {
-              id: related.id || relatedUsername,
-              username: relatedUsername,
-              fullName: related.profile_name?.replace(/\*/g, ''),
-              profilePicture: related.profile_pic_url?.replace(/\*/g, ''),
-              verified: related.is_verified || false,
-              isPartial: true, // Explicitly mark as partial
-              // We can set lastFetched to epoch, but isPartial flag is the main guard now
-              lastFetched: new Date(0),
-            },
-          });
-          relatedProfilesToConnect.push({ id: relatedProfile.id });
-        }
-
-        // Connect related profiles to main profile
-        if (relatedProfilesToConnect.length > 0) {
-          await db.coachProfile.update({
-            where: { username: profile.username },
-            data: {
-              relatedProfiles: {
-                connect: relatedProfilesToConnect,
-              },
-            },
-          });
-        }
-      }
+      // Related accounts saving logic removed as per requirement.
+      // Only the main profile is saved.
     } catch (error) {
       console.error(`Error caching profile ${profile.username} to DB:`, error);
       // Don't throw, just log error so we still return the API data
