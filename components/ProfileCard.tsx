@@ -37,10 +37,10 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
   return (
     <Card className='group overflow-hidden transition-all duration-300 hover:shadow-md hover:border-primary/20 hover:-translate-y-0.5 border-transparent py-0'>
       <CardContent className='p-4'>
-        <div className='flex items-center gap-4'>
+        <div className='flex md:flex-row flex-col md:space-x-5 space-y-5 md:space-y-0 items-start justify-start w-full'>
           {/* Avatar */}
           <div className='relative shrink-0'>
-            <div className='relative h-14 w-14 rounded-full overflow-hidden'>
+            <div className='relative h-full w-full md:w-40 rounded-xl overflow-hidden'>
               {profilePicUrl ? (
                 <img
                   src={profilePicUrl}
@@ -75,41 +75,43 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
             )}
           </div>
 
-          {/* Main Info */}
-          <div className='flex-1 min-w-0'>
-            <div className='flex flex-col items-start justify-between gap-1'>
-              <h3 className='font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors'>
-                @{profile.username}
-              </h3>
-              <Badge variant='secondary'>{profile.niche}</Badge>
+          <div className='flex flex-col items-start gap-4 w-full'>
+            {/* Main Info */}
+            <div className='flex-1 min-w-0'>
+              <div className='flex flex-col items-start justify-between gap-1'>
+                <h3 className='font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors'>
+                  @{profile.username}
+                </h3>
+                <Badge variant='secondary'>{profile.niche}</Badge>
+              </div>
+
+              <p className='text-sm text-muted-foreground mt-1'>
+                {formatFollowerCount(profile.followersCount)} followers
+              </p>
             </div>
 
-            <p className='text-sm text-muted-foreground mt-1'>
-              {formatFollowerCount(profile.followersCount)} followers
-            </p>
+            {/* Bio + Action */}
+            <div className='space-y-3 w-full'>
+              <p className='text-sm text-muted-foreground line-clamp-2'>
+                {profile.bio || 'Coach & mentor helping people level up'}
+              </p>
+
+              <Button
+                asChild
+                variant='outline'
+              >
+                <Link
+                  href={instagramUrl}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='w-full justify-between hover:bg-primary/10'
+                >
+                  <span>View Profile</span>
+                  <ArrowRight className='h-4 w-4' />
+                </Link>
+              </Button>
+            </div>
           </div>
-        </div>
-
-        {/* Bio + Action */}
-        <div className='mt-4 space-y-3'>
-          <p className='text-sm text-muted-foreground line-clamp-2'>
-            {profile.bio || 'Coach & mentor helping people level up'}
-          </p>
-
-          <Button
-            asChild
-            variant='outline'
-          >
-            <Link
-              href={instagramUrl}
-              target='_blank'
-              rel='noopener noreferrer'
-              className='w-full justify-between hover:bg-primary/10'
-            >
-              <span>View Profile</span>
-              <ArrowRight className='h-4 w-4' />
-            </Link>
-          </Button>
         </div>
       </CardContent>
     </Card>
