@@ -19,7 +19,7 @@ const registerSchema = z.object({
   password_confirmation: z.string(),
 });
 
-export async function loginAction(formData: unknown) {
+export async function loginAction(formData: unknown, loginType: 'user' | 'admin' = 'user') {
   const validated = loginSchema.safeParse(formData);
   if (!validated.success) {
     return { error: 'Invalid form data' };
@@ -31,6 +31,7 @@ export async function loginAction(formData: unknown) {
     await signIn('credentials', {
       credential,
       password,
+      loginType,
       redirect: false,
     });
     return { success: true };

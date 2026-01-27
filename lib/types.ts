@@ -16,6 +16,39 @@ export interface CoachProfile {
   niche: string;
   verified: boolean;
   isPartial?: boolean;
+  
+  // Career/Contact Information
+  careerPageUrl?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  applicationUrl?: string;
+  
+  // Ads Tracking
+  metaAdsLibraryUrl?: string;
+  googleAdsLibraryUrl?: string;
+  isRunningAds?: boolean;
+  lastAdsCheck?: Date;
+  
+  // Additional metadata
+  notes?: string;
+  tags?: string[];
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  phone?: string;
+  role: 'user' | 'admin';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Favorite {
+  id: string;
+  userId: string;
+  coachProfileId: string;
+  createdAt: Date;
 }
 
 export interface FilterOptions {

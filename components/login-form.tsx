@@ -32,8 +32,9 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm({
   className,
+  loginType = 'user',
   ...props
-}: React.ComponentProps<'div'>) {
+}: React.ComponentProps<'div'> & { loginType?: 'user' | 'admin' }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -47,7 +48,7 @@ export function LoginForm({
 
   const onSubmit = (data: LoginFormData) => {
     startTransition(async () => {
-      const result = await loginAction(data);
+      const result = await loginAction(data, loginType);
 
       if (result?.error) {
         toast.error('Login failed', {
@@ -57,8 +58,13 @@ export function LoginForm({
         toast.success('Welcome back!', {
           description: 'You have been logged in successfully.',
         });
-        router.push('/dashboard'); // or wherever you want after login
-        router.refresh(); // to revalidate server components if needed
+
+        if (loginType === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/dashboard');
+        }
+        router.refresh();
       }
     });
   };
@@ -71,9 +77,11 @@ export function LoginForm({
       <Card>
         <CardHeader className='text-center'>
           <CardTitle className='text-xl'>Welcome back</CardTitle>
-          <CardDescription>
-            Login with your Apple or Google account (coming soon)
-          </CardDescription>
+          {loginType === 'user' && (
+            <CardDescription>
+              Login with your Apple or Google account (coming soon)
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent>
           <form
@@ -81,60 +89,42 @@ export function LoginForm({
             className='space-y-6'
           >
             <div className='grid gap-4'>
-              {/* Social buttons placeholder */}
-              <div className='grid grid-cols-2 gap-4'>
-                <Button
-                  variant='outline'
-                  type='button'
-                  disabled
-                >
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                  >
-                    <path
-                      d='M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701'
-                      fill='currentColor'
-                    />
-                  </svg>
-                  Login with Apple
-                </Button>
-                <Button
-                  variant='outline'
-                  type='button'
-                  disabled
-                >
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                  >
-                    <path
-                      d='M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z'
-                      fill='currentColor'
-                    />
-                  </svg>
-                  Login with Google
-                </Button>
-              </div>
-
-              <div className='relative'>
-                <div className='absolute inset-0 flex items-center'>
-                  <span className='w-full border-t' />
-                </div>
-                <div className='relative flex justify-center text-xs uppercase'>
-                  <span className='bg-background px-2 text-muted-foreground'>
-                    Or continue with
-                  </span>
-                </div>
-              </div>
+              {loginType === 'user' && (
+                <>
+                  <div className='grid grid-cols-2 gap-4'>
+                    <Button variant='outline' type='button' disabled>
+                      <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>
+                        <path d='M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701' fill='currentColor' />
+                      </svg>
+                      Login with Apple
+                    </Button>
+                    <Button variant='outline' type='button' disabled>
+                      <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>
+                        <path d='M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z' fill='currentColor' />
+                      </svg>
+                      Login with Google
+                    </Button>
+                  </div>
+                  <div className='relative'>
+                    <div className='absolute inset-0 flex items-center'>
+                      <span className='w-full border-t' />
+                    </div>
+                    <div className='relative flex justify-center text-xs uppercase'>
+                      <span className='bg-background px-2 text-muted-foreground'>
+                        Or continue with
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className='grid gap-4'>
                 <div className='grid gap-2'>
-                  <Label htmlFor='credential'>Email or Phone</Label>
+                  <Label htmlFor='credential'>{loginType === 'admin' ? 'Email' : 'Email or Phone'}</Label>
                   <Input
                     id='credential'
                     type='text'
-                    placeholder='m@example.com or +123456789'
+                    placeholder={loginType === 'admin' ? 'Admin Email' : 'm@example.com or +123456789'}
                     disabled={isPending}
                     {...register('credential')}
                   />
@@ -156,6 +146,7 @@ export function LoginForm({
                   <Input
                     id='password'
                     type='password'
+                    placeholder={loginType === 'admin' ? 'Admin Password ' : ''}
                     disabled={isPending}
                     {...register('password')}
                   />
@@ -180,36 +171,40 @@ export function LoginForm({
               </div>
             </div>
 
-            <div className='text-center text-sm'>
-              Don't have an account?{' '}
-              <Link
-                href='/signup'
-                className='underline'
-              >
-                Sign up
-              </Link>
-            </div>
+            {loginType === 'user' && (
+              <div className='text-center text-sm'>
+                Don't have an account?{' '}
+                <Link
+                  href='/signup'
+                  className='underline'
+                >
+                  Sign up
+                </Link>
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>
 
-      <p className='px-6 text-center text-sm text-muted-foreground'>
-        By clicking continue, you agree to our{' '}
-        <Link
-          href='#'
-          className='underline'
-        >
-          Terms of Service
-        </Link>{' '}
-        and{' '}
-        <Link
-          href='#'
-          className='underline'
-        >
-          Privacy Policy
-        </Link>
-        .
-      </p>
+      {loginType === 'user' && (
+        <p className='px-6 text-center text-sm text-muted-foreground'>
+          By clicking continue, you agree to our{' '}
+          <Link
+            href='#'
+            className='underline'
+          >
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link
+            href='#'
+            className='underline'
+          >
+            Privacy Policy
+          </Link>
+          .
+        </p>
+      )}
     </div>
   );
 }

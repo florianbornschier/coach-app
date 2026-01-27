@@ -5,21 +5,49 @@ import { NextResponse } from 'next/server';
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
-  const isLoggedIn = !!req.auth;
+  const session = req.auth as any;
+  const isLoggedIn = !!session;
 
   const { nextUrl } = req;
   const isDashboard = nextUrl.pathname.startsWith('/dashboard');
   const isHome = nextUrl.pathname === '/';
+  const isAdmin = nextUrl.pathname.startsWith('/admin') && nextUrl.pathname !== '/admin_login';
+  const isLoginPage = nextUrl.pathname === '/login';
+  const isAdminLoginPage = nextUrl.pathname === '/admin_login';
 
-  // Redirect /dashboard to /
+  // 1. Allow home page
+  if (isHome) {
+    return NextResponse.next();
+  }
+
+  // 2. Protect /dashboard
   if (isDashboard) {
-    return NextResponse.redirect(new URL('/', nextUrl));
+    if (!isLoggedIn || !session.isUserAuthenticated) {
+      const loginUrl = new URL('/login', nextUrl);
+      loginUrl.searchParams.set('callbackUrl', nextUrl.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
-  // Protect /
-  if (isHome && !isLoggedIn) {
-    return NextResponse.redirect(new URL('/login', nextUrl));
+  // 3. Protect /admin routes
+  if (isAdmin) {
+    // Must be logged in, MUST be an admin, and MUST have used admin login
+    if (!isLoggedIn || session.user?.role !== 'admin' || !session.isAdminAuthenticated) {
+      const loginUrl = new URL('/admin_login', nextUrl);
+      loginUrl.searchParams.set('callbackUrl', nextUrl.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
+
+  // 4. Prevent accessing login pages if already authenticated for that section
+  if (isLoginPage && session?.isUserAuthenticated) {
+    return NextResponse.redirect(new URL('/dashboard', nextUrl));
+  }
+  if (isAdminLoginPage && session?.isAdminAuthenticated) {
+    return NextResponse.redirect(new URL('/admin', nextUrl));
+  }
+
+  return NextResponse.next();
 });
 
 export const config = {

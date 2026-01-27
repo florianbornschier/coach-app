@@ -9,13 +9,15 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String     @id @default(uuid())
+  email     String     @unique
   name      String?
   phone     String?
   password  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      String     @default("user") // "user" | "admin"
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  favorites Favorite[]
 }
 
 model PasswordReset {
@@ -44,13 +46,45 @@ model CoachProfile {
   profilePicUrl         String?
   niche                 String?
   verified              Boolean  @default(false)
-  isPartial             Boolean  @default(false) 
+  isPartial             Boolean  @default(false)
+
+  // Career/Contact Information
+  careerPageUrl     String?
+  contactEmail      String?
+  contactPhone      String?
+  applicationUrl    String?
+  
+  // Ads Tracking
+  metaAdsLibraryUrl   String?
+  googleAdsLibraryUrl String?
+  isRunningAds        Boolean  @default(false)
+  lastAdsCheck        DateTime?
+  
+  // Additional metadata
+  notes             String?
+  tags              String[] // For categorization
 
   // Self-relation for related profiles
   relatedProfiles CoachProfile[] @relation("RelatedProfiles")
   relatedTo       CoachProfile[] @relation("RelatedProfiles")
+  
+  // Favorites relation
+  favorites       Favorite[]
 
   lastFetched DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Favorite {
+  id              String        @id @default(uuid())
+  userId          String
+  coachProfileId  String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coachProfile    CoachProfile  @relation(fields: [coachProfileId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  
+  @@unique([userId, coachProfileId])
+  @@index([userId])
+  @@index([coachProfileId])
 }
