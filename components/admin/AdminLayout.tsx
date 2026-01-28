@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard,
   Users,
@@ -95,14 +96,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <form action='/api/auth/signout' method='POST' className='w-full'>
-                <SidebarMenuButton asChild>
-                  <button type='submit' className='w-full'>
-                    <LogOut className='h-4 w-4' />
-                    <span>Logout</span>
-                  </button>
-                </SidebarMenuButton>
-              </form>
+              <SidebarMenuButton onClick={() => signOut({ callbackUrl: '/' })}>
+                <LogOut className='h-4 w-4' />
+                <span>Logout</span>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
