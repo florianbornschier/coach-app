@@ -50,7 +50,7 @@ export default function CoachesFilter({ onFilterChange }: CoachesFilterProps) {
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder='Username or name...'
                                 className='pl-10 border-border bg-background text-foreground'
-                                onKeyPress={(e) => e.key === 'Enter' && handleApplyFilters()}
+                                onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
                             />
                         </div>
                     </div>

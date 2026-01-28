@@ -215,8 +215,8 @@ export default function InstagramImportForm() {
                                     ✓ Successfully imported @{results.username}
                                 </p>
                                 <div className='text-sm text-gray-600'>
-                                    <p>Followers: {results.followersCount?.toLocaleString()}</p>
-                                    <p>Posts: {results.postsCount?.toLocaleString()}</p>
+                                    <p>Followers: {Number(results.followersCount || 0).toLocaleString()}</p>
+                                    <p>Posts: {Number(results.postsCount || 0).toLocaleString()}</p>
                                 </div>
                             </div>
                         ) : (

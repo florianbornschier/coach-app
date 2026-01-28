@@ -160,7 +160,7 @@ export default function CoachesTable({
                   <Badge variant='secondary'>{coach.niche}</Badge>
                 )}
               </TableCell>
-              <TableCell>{(coach.followersCount ?? 0).toLocaleString()}</TableCell>
+              <TableCell>{Number(coach.followersCount || 0).toLocaleString()}</TableCell>
               <TableCell>
                 {coach.verified ? (
                   <Badge variant='default'>Verified</Badge>
