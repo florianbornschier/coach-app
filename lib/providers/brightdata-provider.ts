@@ -63,7 +63,7 @@ export class BrightDataProvider implements InstagramProvider {
       isBusinessAccount: dbProfile.isBusinessAccount,
       isProfessionalAccount: dbProfile.isProfessionalAccount,
       profilePicUrl: dbProfile.profilePicUrl,
-      niche: dbProfile.niche,
+      niche: dbProfile.niche || 'Lifestyle',
       verified: dbProfile.verified,
       isPartial: dbProfile.isPartial,
     };
@@ -77,7 +77,6 @@ export class BrightDataProvider implements InstagramProvider {
       try {
         const existingProfile = await db.coachProfile.findUnique({
           where: { username },
-          include: { relatedProfiles: true },
         });
 
         // 2. Check if data is fresh (< 6 months old) and NOT partial

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin/auth';
 import { prisma } from '@/lib/prisma';
 import { getInstagramProvider } from '@/lib/providers';
+import { CoachProfile } from '@/lib/types';
 
 /**
  * POST /api/instagram/scrape
