@@ -33,10 +33,15 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
   const avatarColor = getAvatarColor(profile.id);
   const originalProfilePicUrl =
     profile.profilePicUrlHD || profile.profilePicUrl || profile.profilePicture;
-  // Use proxy route to bypass CORS issues
+
+  // Use proxy route to bypass CORS issues for external URLs
+  // but use Supabase URLs directly
   const profilePicUrl = originalProfilePicUrl
-    ? `/api/image-proxy?url=${encodeURIComponent(originalProfilePicUrl)}`
+    ? originalProfilePicUrl.includes('supabase.co')
+      ? originalProfilePicUrl
+      : `/api/image-proxy?url=${encodeURIComponent(originalProfilePicUrl)}`
     : null;
+
   const instagramUrl = `https://www.instagram.com/${profile.username}/`;
 
   return (
