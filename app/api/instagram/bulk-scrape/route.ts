@@ -30,17 +30,19 @@ export async function POST(request: NextRequest) {
         // Process each username
         for (const username of usernames) {
             try {
-                // Check if profile exists and was fetched within the last 6 months (180 days)
+                console.log(`[Bulk] Processing @${username}...`);
+
+                // Check if profile exists and was fetched within the last 30 days
                 const existingCoach = await prisma.coachProfile.findUnique({
                     where: { username: username.toLowerCase() },
                 });
 
                 if (existingCoach && existingCoach.lastFetched) {
-                    const sixMonthsAgo = new Date();
-                    sixMonthsAgo.setDate(sixMonthsAgo.getDate() - 180);
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-                    if (existingCoach.lastFetched > sixMonthsAgo) {
-                        console.log(`Using cached data for @${username} (fetched within 6 months)`);
+                    if (existingCoach.lastFetched > thirtyDaysAgo) {
+                        console.log(`[Bulk] Using recently cached data for @${username}`);
                         results.success.push(username);
                         continue;
                     }
@@ -50,22 +52,23 @@ export async function POST(request: NextRequest) {
                 const profileData = await provider.fetchProfile(username);
 
                 if (!profileData) {
+                    console.warn(`[Bulk] Profile @${username} not found or skipped`);
                     results.failed.push({
                         username,
-                        error: 'Profile not found or could not be scraped',
+                        error: 'Profile not found or does not meet criteria (Must be a German account)',
                     });
                     continue;
                 }
 
-                // Save to database (upsert to handle duplicates)
+                // Save to database
                 await prisma.coachProfile.upsert({
                     where: { id: profileData.id },
                     create: {
                         id: profileData.id,
-                        username: profileData.username,
+                        username: profileData.username.toLowerCase(),
                         fullName: profileData.fullName,
                         profilePicture: profileData.profilePicture,
-                        profilePicUrl: profileData.profilePicture,
+                        profilePicUrl: profileData.profilePicUrl,
                         bio: profileData.bio,
                         biography: profileData.biography,
                         externalUrls: profileData.externalUrls,
@@ -76,12 +79,14 @@ export async function POST(request: NextRequest) {
                         isProfessionalAccount: profileData.isProfessionalAccount,
                         niche: profileData.niche,
                         verified: profileData.verified,
-                        isPartial: profileData.isPartial || false,
+                        isPartial: false,
+                        lastFetched: new Date(),
                     },
                     update: {
+                        username: profileData.username.toLowerCase(),
                         fullName: profileData.fullName,
                         profilePicture: profileData.profilePicture,
-                        profilePicUrl: profileData.profilePicture,
+                        profilePicUrl: profileData.profilePicUrl,
                         bio: profileData.bio,
                         biography: profileData.biography,
                         externalUrls: profileData.externalUrls,
@@ -93,14 +98,17 @@ export async function POST(request: NextRequest) {
                         niche: profileData.niche,
                         verified: profileData.verified,
                         lastFetched: new Date(),
+                        isPartial: false,
                     },
                 });
 
                 results.success.push(username);
+                console.log(`[Bulk] Successfully imported @${username}`);
 
                 // Add a small delay to avoid rate limiting
-                await new Promise((resolve) => setTimeout(resolve, 1000));
+                await new Promise((resolve) => setTimeout(resolve, 500));
             } catch (error) {
+                console.error(`[Bulk] Error processing @${username}:`, error);
                 results.failed.push({
                     username,
                     error: error instanceof Error ? error.message : 'Unknown error',

@@ -57,12 +57,15 @@ export default function CoachesFilter({ onFilterChange }: CoachesFilterProps) {
 
                     <div>
                         <Label htmlFor='niche' className='text-foreground'>Niche</Label>
-                        <Select value={niche} onValueChange={setNiche}>
+                        <Select
+                            value={niche || 'all'}
+                            onValueChange={(value) => setNiche(value === 'all' ? '' : value)}
+                        >
                             <SelectTrigger className='mt-1 border-border bg-background text-foreground'>
                                 <SelectValue placeholder='All niches' />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value=''>All niches</SelectItem>
+                                <SelectItem value='all'>All niches</SelectItem>
                                 {NICHES.map((n) => (
                                     <SelectItem key={n} value={n}>
                                         {n}

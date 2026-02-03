@@ -214,10 +214,15 @@ export default function InstagramImportForm() {
                                 <p className='text-green-600 font-medium'>
                                     ✓ Successfully imported @{results.username}
                                 </p>
-                                <div className='text-sm text-gray-600'>
-                                    <p>Followers: {Number(results.followersCount || 0).toLocaleString()}</p>
-                                    <p>Posts: {Number(results.postsCount || 0).toLocaleString()}</p>
+                                <div className='grid grid-cols-2 gap-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg'>
+                                    <p><span className='font-semibold'>Niche:</span> {results.niche || 'Not detected'}</p>
+                                    <p><span className='font-semibold'>Followers:</span> {Number(results.followersCount || 0).toLocaleString()}</p>
+                                    <p><span className='font-semibold'>Posts:</span> {Number(results.postsCount || 0).toLocaleString()}</p>
+                                    <p><span className='font-semibold'>Verified:</span> {results.verified ? 'Yes' : 'No'}</p>
                                 </div>
+                                <p className='text-xs text-blue-600 mt-2'>
+                                    Profile picture has been saved to permanent storage.
+                                </p>
                             </div>
                         ) : (
                             <div className='space-y-4'>

@@ -63,17 +63,28 @@ export default async function CoachViewPage({
                             <CardTitle>Basic Information</CardTitle>
                         </CardHeader>
                         <CardContent className='space-y-4'>
-                            {coach.profilePicUrl && (
-                                <div className='flex justify-center'>
-                                    <Image
-                                        src={coach.profilePicUrl}
-                                        alt={coach.fullName || coach.username}
-                                        width={120}
-                                        height={120}
-                                        className='rounded-full'
-                                    />
+                            <div className='flex justify-center'>
+                                <div className='relative h-32 w-32 rounded-full overflow-hidden border-2 border-gray-100 bg-gray-50 flex items-center justify-center'>
+                                    {coach.profilePicUrl ? (
+                                        <img
+                                            src={coach.profilePicUrl.startsWith('http') && !coach.profilePicUrl.includes('supabase.co')
+                                                ? `/api/image-proxy?url=${encodeURIComponent(coach.profilePicUrl)}`
+                                                : coach.profilePicUrl}
+                                            alt={coach.fullName || coach.username}
+                                            className='h-full w-full object-cover'
+                                            onError={(e) => {
+                                                const target = e.target as HTMLImageElement;
+                                                target.style.display = 'none';
+                                                const fallback = target.nextElementSibling as HTMLElement;
+                                                if (fallback) fallback.style.display = 'flex';
+                                            }}
+                                        />
+                                    ) : null}
+                                    <div className={`h-full w-full flex items-center justify-center bg-blue-500 text-white text-3xl font-bold ${coach.profilePicUrl ? 'hidden' : 'flex'}`}>
+                                        {coach.username.charAt(0).toUpperCase()}
+                                    </div>
                                 </div>
-                            )}
+                            </div>
 
                             <div>
                                 <p className='text-sm font-medium text-gray-500'>Username</p>
@@ -179,76 +190,86 @@ export default async function CoachViewPage({
                     )}
 
                     {/* Career Information */}
-                    {(coach.careerPageUrl ||
-                        coach.contactEmail ||
-                        coach.contactPhone ||
-                        coach.applicationUrl) && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Career Information</CardTitle>
-                                </CardHeader>
-                                <CardContent className='space-y-3'>
-                                    {coach.careerPageUrl && (
-                                        <div className='flex items-center gap-2'>
-                                            <Globe className='h-4 w-4 text-gray-500' />
-                                            <a
-                                                href={coach.careerPageUrl}
-                                                target='_blank'
-                                                rel='noopener noreferrer'
-                                                className='text-blue-600 hover:underline flex items-center gap-1'
-                                            >
-                                                Career Page
-                                                <ExternalLink className='h-3 w-3' />
-                                            </a>
-                                        </div>
-                                    )}
-                                    {coach.contactEmail && (
-                                        <div className='flex items-center gap-2'>
-                                            <Mail className='h-4 w-4 text-gray-500' />
-                                            <a
-                                                href={`mailto:${coach.contactEmail}`}
-                                                className='text-blue-600 hover:underline'
-                                            >
-                                                {coach.contactEmail}
-                                            </a>
-                                        </div>
-                                    )}
-                                    {coach.contactPhone && (
-                                        <div className='flex items-center gap-2'>
-                                            <Phone className='h-4 w-4 text-gray-500' />
-                                            <a
-                                                href={`tel:${coach.contactPhone}`}
-                                                className='text-blue-600 hover:underline'
-                                            >
-                                                {coach.contactPhone}
-                                            </a>
-                                        </div>
-                                    )}
-                                    {coach.applicationUrl && (
-                                        <div className='flex items-center gap-2'>
-                                            <ExternalLink className='h-4 w-4 text-gray-500' />
-                                            <a
-                                                href={coach.applicationUrl}
-                                                target='_blank'
-                                                rel='noopener noreferrer'
-                                                className='text-blue-600 hover:underline'
-                                            >
-                                                Application Form
-                                            </a>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        )}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Career Information</CardTitle>
+                        </CardHeader>
+                        <CardContent className='space-y-3'>
+                            <div className='flex items-center gap-2'>
+                                <Globe className='h-4 w-4 text-gray-500' />
+                                <span className='text-sm font-medium'>Career Page:</span>
+                                {coach.careerPageUrl ? (
+                                    <a
+                                        href={coach.careerPageUrl}
+                                        target='_blank'
+                                        rel='noopener noreferrer'
+                                        className='text-blue-600 hover:underline flex items-center gap-1 text-sm'
+                                    >
+                                        Visit Page
+                                        <ExternalLink className='h-3 w-3' />
+                                    </a>
+                                ) : (
+                                    <span className='text-sm text-gray-400italic'>Not provided</span>
+                                )}
+                            </div>
+
+                            <div className='flex items-center gap-2'>
+                                <Mail className='h-4 w-4 text-gray-500' />
+                                <span className='text-sm font-medium'>Email:</span>
+                                {coach.contactEmail ? (
+                                    <a
+                                        href={`mailto:${coach.contactEmail}`}
+                                        className='text-blue-600 hover:underline text-sm'
+                                    >
+                                        {coach.contactEmail}
+                                    </a>
+                                ) : (
+                                    <span className='text-sm text-gray-400 italic'>Not provided</span>
+                                )}
+                            </div>
+
+                            <div className='flex items-center gap-2'>
+                                <Phone className='h-4 w-4 text-gray-500' />
+                                <span className='text-sm font-medium'>Phone:</span>
+                                {coach.contactPhone ? (
+                                    <a
+                                        href={`tel:${coach.contactPhone}`}
+                                        className='text-blue-600 hover:underline text-sm'
+                                    >
+                                        {coach.contactPhone}
+                                    </a>
+                                ) : (
+                                    <span className='text-sm text-gray-400 italic'>Not provided</span>
+                                )}
+                            </div>
+
+                            <div className='flex items-center gap-2'>
+                                <ExternalLink className='h-4 w-4 text-gray-500' />
+                                <span className='text-sm font-medium'>Application:</span>
+                                {coach.applicationUrl ? (
+                                    <a
+                                        href={coach.applicationUrl}
+                                        target='_blank'
+                                        rel='noopener noreferrer'
+                                        className='text-blue-600 hover:underline text-sm'
+                                    >
+                                        Link
+                                    </a>
+                                ) : (
+                                    <span className='text-sm text-gray-400 italic'>Not provided</span>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
 
                     {/* Ads Tracking */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Ads Tracking</CardTitle>
                         </CardHeader>
-                        <CardContent className='space-y-3'>
+                        <CardContent className='space-y-4'>
                             <div>
-                                <p className='text-sm font-medium text-gray-500'>Status</p>
+                                <p className='text-sm font-medium text-gray-500'>Ad Status</p>
                                 <Badge
                                     variant={coach.isRunningAds ? 'destructive' : 'outline'}
                                     className='mt-1'
@@ -257,39 +278,39 @@ export default async function CoachViewPage({
                                 </Badge>
                             </div>
 
-                            {coach.metaAdsLibraryUrl && (
-                                <div>
-                                    <p className='text-sm font-medium text-gray-500'>
-                                        Meta Ads Library
-                                    </p>
+                            <div>
+                                <p className='text-sm font-medium text-gray-500'>Meta Ads Library</p>
+                                {coach.metaAdsLibraryUrl ? (
                                     <a
                                         href={coach.metaAdsLibraryUrl}
                                         target='_blank'
                                         rel='noopener noreferrer'
                                         className='text-blue-600 hover:underline text-sm flex items-center gap-1 mt-1'
                                     >
-                                        View Ads
+                                        View Library
                                         <ExternalLink className='h-3 w-3' />
                                     </a>
-                                </div>
-                            )}
+                                ) : (
+                                    <p className='text-sm text-gray-400 italic mt-1'>Not provided</p>
+                                )}
+                            </div>
 
-                            {coach.googleAdsLibraryUrl && (
-                                <div>
-                                    <p className='text-sm font-medium text-gray-500'>
-                                        Google Ads Library
-                                    </p>
+                            <div>
+                                <p className='text-sm font-medium text-gray-500'>Google Ads Library</p>
+                                {coach.googleAdsLibraryUrl ? (
                                     <a
                                         href={coach.googleAdsLibraryUrl}
                                         target='_blank'
                                         rel='noopener noreferrer'
                                         className='text-blue-600 hover:underline text-sm flex items-center gap-1 mt-1'
                                     >
-                                        View Ads
+                                        View Library
                                         <ExternalLink className='h-3 w-3' />
                                     </a>
-                                </div>
-                            )}
+                                ) : (
+                                    <p className='text-sm text-gray-400 italic mt-1'>Not provided</p>
+                                )}
+                            </div>
 
                             {coach.lastAdsCheck && (
                                 <div>

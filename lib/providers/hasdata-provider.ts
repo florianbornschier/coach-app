@@ -19,6 +19,8 @@ export class HasDataProvider implements InstagramProvider {
 
   async fetchProfile(username: string): Promise<CoachProfile | null> {
     try {
+      const { uploadProfilePicture } = await import('../storage');
+
       const response = await fetch(
         `https://api.hasdata.com/scrape/instagram/profile?handle=${encodeURIComponent(
           username
@@ -40,17 +42,35 @@ export class HasDataProvider implements InstagramProvider {
         if (response.status === 429) {
           throw new Error('Rate limit exceeded. Please try again later.');
         }
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
+        throw new Error(`HasData API error: ${response.status} ${response.statusText}`);
       }
 
       const data: InstagramProfileResponse = await response.json();
 
       // Check if account is German
       if (!isGermanAccount(data.biography, data.fullName)) {
+        console.log(`Skipping @${username} - Not a German account`);
         return null; // Skip non-German accounts
       }
 
-      return mapToCoachProfile(data);
+      const profile = mapToCoachProfile(data);
+      if (!profile) return null;
+
+      // Upload profile picture to Supabase for permanent storage
+      const imageUrl = data.profilePicUrlHD || data.profilePicUrl;
+      if (imageUrl) {
+        try {
+          const permanentUrl = await uploadProfilePicture(imageUrl, username);
+          if (permanentUrl) {
+            profile.profilePicture = permanentUrl;
+            profile.profilePicUrl = permanentUrl;
+          }
+        } catch (error) {
+          console.error(`Failed to upload profile picture for ${username}:`, error);
+        }
+      }
+
+      return profile;
     } catch (error) {
       console.error(`Error fetching profile for ${username}:`, error);
       throw error;

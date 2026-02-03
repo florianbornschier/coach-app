@@ -14,9 +14,9 @@ model User {
   name      String?
   phone     String?
   password  String?
-  role      String     @default("user") // "user" | "admin"
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+  role      String     @default("user")
   favorites Favorite[]
 }
 
@@ -26,64 +26,53 @@ model PasswordReset {
   otpHash   String
   expiresAt DateTime
   createdAt DateTime @default(now())
-  
+
   @@index([email])
 }
 
 model CoachProfile {
-  id                    String   @id
-  username              String   @unique
+  id                    String         @id
+  username              String         @unique
   fullName              String?
   profilePicture        String?
   bio                   String?
   biography             String?
   externalUrls          String?
-  followersCount        Int      @default(0)
-  followsCount          Int      @default(0)
-  postsCount            Int      @default(0)
-  isBusinessAccount     Boolean  @default(false)
-  isProfessionalAccount Boolean  @default(false)
+  followersCount        Int            @default(0)
+  followsCount          Int            @default(0)
+  postsCount            Int            @default(0)
+  isBusinessAccount     Boolean        @default(false)
+  isProfessionalAccount Boolean        @default(false)
   profilePicUrl         String?
   niche                 String?
-  verified              Boolean  @default(false)
-  isPartial             Boolean  @default(false)
-
-  // Career/Contact Information
-  careerPageUrl     String?
-  contactEmail      String?
-  contactPhone      String?
-  applicationUrl    String?
-  
-  // Ads Tracking
-  metaAdsLibraryUrl   String?
-  googleAdsLibraryUrl String?
-  isRunningAds        Boolean  @default(false)
-  lastAdsCheck        DateTime?
-  
-  // Additional metadata
-  notes             String?
-  tags              String[] // For categorization
-
-  // Self-relation for related profiles
-  relatedProfiles CoachProfile[] @relation("RelatedProfiles")
-  relatedTo       CoachProfile[] @relation("RelatedProfiles")
-  
-  // Favorites relation
-  favorites       Favorite[]
-
-  lastFetched DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  verified              Boolean        @default(false)
+  isPartial             Boolean        @default(false)
+  lastFetched           DateTime       @default(now())
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  applicationUrl        String?
+  careerPageUrl         String?
+  contactEmail          String?
+  contactPhone          String?
+  googleAdsLibraryUrl   String?
+  isRunningAds          Boolean        @default(false)
+  lastAdsCheck          DateTime?
+  metaAdsLibraryUrl     String?
+  notes                 String?
+  tags                  String[]
+  favorites             Favorite[]
+  CoachProfile_A        CoachProfile[] @relation("RelatedProfiles")
+  CoachProfile_B        CoachProfile[] @relation("RelatedProfiles")
 }
 
 model Favorite {
-  id              String        @id @default(uuid())
-  userId          String
-  coachProfileId  String
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  coachProfile    CoachProfile  @relation(fields: [coachProfileId], references: [id], onDelete: Cascade)
-  createdAt       DateTime      @default(now())
-  
+  id             String       @id @default(uuid())
+  userId         String
+  coachProfileId String
+  createdAt      DateTime     @default(now())
+  coachProfile   CoachProfile @relation(fields: [coachProfileId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([userId, coachProfileId])
   @@index([userId])
   @@index([coachProfileId])
